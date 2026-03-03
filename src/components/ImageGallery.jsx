@@ -84,7 +84,7 @@ const ImageGallery = ({ refreshTrigger }) => {
                                     bottom: 0,
                                     left: 0,
                                     right: 0,
-                                    background: 'linear-gradient(to top, rgba(0,0,0,0.8), transparent)',
+                                    background: 'linear-gradient(to top, rgba(45,34,53,0.85), transparent)',
                                     padding: '1rem',
                                     color: 'white',
                                     opacity: 0,

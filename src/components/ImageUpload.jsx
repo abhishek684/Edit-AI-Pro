@@ -159,7 +159,7 @@ const ImageUpload = ({ onUploadSuccess }) => {
                         borderRadius: 'var(--radius-lg)',
                         padding: '3rem 2rem',
                         textAlign: 'center',
-                        backgroundColor: dragActive ? 'rgba(79, 70, 229, 0.05)' : 'transparent',
+                        backgroundColor: dragActive ? 'rgba(232, 67, 147, 0.05)' : 'transparent',
                         transition: 'all 0.2s',
                         cursor: hasCredits ? 'pointer' : 'not-allowed',
                         opacity: hasCredits ? 1 : 0.6
@@ -175,7 +175,7 @@ const ImageUpload = ({ onUploadSuccess }) => {
                         disabled={!hasCredits}
                     />
                     <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}>
-                        <div style={{ width: 48, height: 48, borderRadius: '50%', backgroundColor: 'var(--bg-main)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+                        <div style={{ width: 48, height: 48, borderRadius: '50%', background: 'linear-gradient(135deg, rgba(232,67,147,0.1), rgba(249,115,22,0.1))', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#E84393' }}>
                             <UploadCloud size={24} />
                         </div>
                         <div>
