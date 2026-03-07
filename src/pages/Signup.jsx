@@ -34,8 +34,9 @@ const Signup = () => {
             await signInWithGoogle();
             await refreshUserProfile();
             navigate('/dashboard');
-        } catch {
-            setError('Failed to sign in with Google.');
+        } catch (err) {
+            console.error("Google Sign In Error:", err);
+            setError(err.message || 'Failed to sign in with Google.');
         }
     };
 
