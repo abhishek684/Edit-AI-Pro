@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import ReactCrop, { centerCrop, makeAspectCrop } from 'react-image-crop';
-import 'react-image-crop/dist/ReactCrop.css';
-import { ArrowLeft, Save, RotateCw, Crop, Droplet, Sun, Contrast, Activity, Loader2, Sparkles, Wand2, Eraser, UserCheck, Maximize, Image as ImageIcon, Check, X } from 'lucide-react';
+import { ArrowLeft, Save, RotateCw, Droplet, Sun, Contrast, Activity, Loader2, Sparkles, Wand2, Eraser, UserCheck, Maximize, Image as ImageIcon, Check, X } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { getImageById, saveEditedImage } from '../services/imageService';
 import { deductUserCredit } from '../services/authService';
@@ -38,11 +36,6 @@ const Editor = () => {
     const [blur, setBlur] = useState(0);
     const [rotation, setRotation] = useState(0);
 
-    // Crop State
-    const [isCropping, setIsCropping] = useState(false);
-    const [crop, setCrop] = useState();
-    const [completedCrop, setCompletedCrop] = useState(null);
-    const cropImgRef = useRef(null);
 
     const canvasRef = useRef(null);
     const imageElementRef = useRef(null);
@@ -137,81 +130,6 @@ const Editor = () => {
         setRotation(prev => (prev + 90) % 360);
     };
 
-    const handleEnableCrop = () => {
-        setIsCropping(true);
-        // Default crop to center 80%
-        if (imageElementRef.current) {
-            const { width, height } = imageElementRef.current;
-            const newCrop = centerCrop(
-                makeAspectCrop({ unit: '%', width: 80 }, width / height, width, height),
-                width,
-                height
-            );
-            setCrop(newCrop);
-            setCompletedCrop(newCrop);
-        }
-    };
-
-    const handleApplyCrop = () => {
-        if (!completedCrop || !completedCrop.width || !completedCrop.height || !imageElementRef.current || !cropImgRef.current) {
-            setIsCropping(false);
-            return;
-        }
-
-        const img = imageElementRef.current;
-        const cropImg = cropImgRef.current;
-
-        // Calculate the scale based on the rendered image in the crop overlay vs the natural image size
-        const scaleX = img.naturalWidth / cropImg.width;
-        const scaleY = img.naturalHeight / cropImg.height;
-
-        // Create a temporary canvas to draw the cropped portion
-        const tempCanvas = document.createElement('canvas');
-
-        // We need to account for the device pixel ratio to avoid blurriness
-        const pixelRatio = window.devicePixelRatio || 1;
-
-        tempCanvas.width = Math.floor(completedCrop.width * scaleX * pixelRatio);
-        tempCanvas.height = Math.floor(completedCrop.height * scaleY * pixelRatio);
-
-        const ctx = tempCanvas.getContext('2d');
-        if (!ctx) return;
-
-        ctx.scale(pixelRatio, pixelRatio);
-        ctx.imageSmoothingQuality = 'high';
-
-        // Draw the precise region from the natural image
-        ctx.drawImage(
-            img,
-            completedCrop.x * scaleX,
-            completedCrop.y * scaleY,
-            completedCrop.width * scaleX,
-            completedCrop.height * scaleY,
-            0,
-            0,
-            completedCrop.width * scaleX,
-            completedCrop.height * scaleY
-        );
-
-        const newBase64 = tempCanvas.toDataURL('image/jpeg', 0.95);
-
-        const newImg = new Image();
-        newImg.crossOrigin = 'anonymous';
-        newImg.onload = () => {
-            imageElementRef.current = newImg;
-            setLastEditType('crop');
-            // Reset adjustments since we are effectively creating a new base image
-            setRotation(0);
-            setBrightness(100);
-            setContrast(100);
-            setSaturation(100);
-            setBlur(0);
-            setIsCropping(false);
-            setCompletedCrop(null);
-            drawCanvas();
-        };
-        newImg.src = newBase64;
-    };
 
     const handleReset = () => {
         setBrightness(100);
@@ -501,32 +419,6 @@ const Editor = () => {
 
                     {/* The Canvas wrapper is constrained to 100% of the viewport container */}
                     <div ref={containerRef} style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
-                        {isCropping ? (
-                            <ReactCrop
-                                crop={crop}
-                                onChange={(_, percentCrop) => setCrop(percentCrop)}
-                                onComplete={(c) => setCompletedCrop(c)}
-                                style={{
-                                    maxWidth: '100%',
-                                    maxHeight: '100%',
-                                    objectFit: 'contain',
-                                    boxShadow: 'var(--shadow-md)'
-                                }}
-                            >
-                                <img
-                                    ref={cropImgRef}
-                                    src={imageElementRef.current?.src}
-                                    alt="Crop me"
-                                    style={{
-                                        maxWidth: '100%',
-                                        maxHeight: '100%',
-                                        objectFit: 'contain',
-                                        filter: `brightness(${brightness}%) contrast(${contrast}%) saturate(${saturation}%) blur(${blur}px)`,
-                                        transform: `rotate(${rotation}deg)`
-                                    }}
-                                />
-                            </ReactCrop>
-                        ) : (
                             <canvas
                                 ref={canvasRef}
                                 style={{
@@ -538,7 +430,6 @@ const Editor = () => {
                                     visibility: showSlider ? 'hidden' : 'visible'
                                 }}
                             />
-                        )}
 
                         {/* Feature comparison slider */}
                         {showSlider && preEditImage && (
@@ -610,38 +501,6 @@ const Editor = () => {
                             </div>
                         )}
 
-                        {/* Crop Actions Overlay positioned at the bottom floating above canvas area */}
-                        {isCropping && (
-                            <div style={{
-                                position: 'absolute',
-                                bottom: '1rem',
-                                left: '50%',
-                                transform: 'translateX(-50%)',
-                                display: 'flex',
-                                gap: '1rem',
-                                zIndex: 100,
-                                backgroundColor: 'var(--bg-card)',
-                                padding: '0.5rem 1rem',
-                                borderRadius: '1rem',
-                                boxShadow: 'var(--shadow-lg)',
-                                border: '1px solid var(--border)'
-                            }}>
-                                <button
-                                    className="btn-outline"
-                                    onClick={() => setIsCropping(false)}
-                                    style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', padding: '0.25rem 0.75rem', fontSize: '0.875rem', borderColor: 'var(--error)', color: 'var(--error)' }}
-                                >
-                                    <X size={16} /> Cancel
-                                </button>
-                                <button
-                                    className="btn-primary"
-                                    onClick={handleApplyCrop}
-                                    style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', padding: '0.25rem 0.75rem', fontSize: '0.875rem', backgroundColor: 'var(--success)' }}
-                                >
-                                    <Check size={16} /> Apply Crop
-                                </button>
-                            </div>
-                        )}
                     </div>
                 </div>
             </div>
@@ -699,14 +558,10 @@ const Editor = () => {
                 <div style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
 
                     {/* Action Tools */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.5rem' }}>
-                        <button className="btn-outline" onClick={handleRotate} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', padding: '1rem' }}>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <button className="btn-outline" onClick={handleRotate} style={{ display: 'flex', flex: 1, flexDirection: 'column', alignItems: 'center', gap: '0.5rem', padding: '1rem' }}>
                             <RotateCw size={20} />
                             <span style={{ fontSize: '0.75rem' }}>Rotate 90°</span>
-                        </button>
-                        <button className="btn-outline" onClick={() => handleEnableCrop()} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.5rem', padding: '1rem' }}>
-                            <Crop size={20} />
-                            <span style={{ fontSize: '0.75rem' }}>Crop</span>
                         </button>
                     </div>
 
